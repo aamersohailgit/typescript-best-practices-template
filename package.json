@@ -1,0 +1,41 @@
+{
+  "name": "typescript-best-practices-template",
+  "version": "1.0.0",
+  "description": "Production-ready TypeScript template following SOLID, DRY, and KISS principles",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc && tsc-alias",
+    "start": "node dist/main.js",
+    "lint": "eslint src --ext .ts --fix",
+    "lint:check": "eslint src --ext .ts",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "type-check": "tsc --noEmit",
+    "validate": "npm run type-check && npm run lint:check && npm run format:check",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.13",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "rimraf": "^5.0.7",
+    "tsc-alias": "^1.8.10",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.4",
+    "vitest": "^1.6.0",
+    "@vitest/ui": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
