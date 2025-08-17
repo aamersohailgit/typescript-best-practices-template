@@ -4,28 +4,28 @@
 
 ### **Current Code → Template Pattern Mapping**
 
-| **Your Current Code** | **Replace With** | **Why** |
-|----------------------|------------------|---------|
-| `@Body() body: any` | `@Body() body: DeviceUpdateRequest` | Type safety instead of `any` |
-| `if ("acked" in body)` | `const validated = ValidationService.validate(body)` | Runtime validation |
-| `body.acked == true` | `validated.acknowledged === true` | Strict equality + proper typing |
-| `new AckedSetByUuid()` | `this.alarmService.acknowledgeAlarm()` | Dependency injection |
-| `console.log()` | `this.logger.info()` | Structured logging |
-| Large `VaPmcsDeviceLogic` class | Split into separate services | Single Responsibility |
-| Direct WinCC OA calls | Service layer abstraction | Separation of concerns |
-| Hardcoded strings | Type-safe enums/constants | Type safety |
-| No error handling | Structured error types | Proper error management |
+| **Your Current Code**       | **Replace With**                                 | **Why**                   |
+| --------------------------------- | ------------------------------------------------------ | ------------------------------- |
+| `@Body() body: any`             | `@Body() body: DeviceUpdateRequest`                  | Type safety instead of `any`  |
+| `if ("acked" in body)`          | `const validated = ValidationService.validate(body)` | Runtime validation              |
+| `body.acked == true`            | `validated.acknowledged === true`                    | Strict equality + proper typing |
+| `new AckedSetByUuid()`          | `this.alarmService.acknowledgeAlarm()`               | Dependency injection            |
+| `console.log()`                 | `this.logger.info()`                                 | Structured logging              |
+| Large `VaPmcsDeviceLogic` class | Split into separate services                           | Single Responsibility           |
+| Direct WinCC OA calls             | Service layer abstraction                              | Separation of concerns          |
+| Hardcoded strings                 | Type-safe enums/constants                              | Type safety                     |
+| No error handling                 | Structured error types                                 | Proper error management         |
 
 ### **File Structure Migration**
 
-| **Current Structure** | **New Template Structure** |
-|----------------------|---------------------------|
-| `src/api/controllers/` | `src/controllers/` |
-| Mixed business logic in controllers | `src/services/` (business logic only) |
-| Direct database/WinCC calls | `src/repositories/` (data access only) |
-| Scattered type definitions | `src/types/` (centralized types) |
-| No utility organization | `src/utils/` (pure functions) |
-| No centralized config | `src/config/` (configuration management) |
+| **Current Structure**         | **New Template Structure**           |
+| ----------------------------------- | ------------------------------------------ |
+| `src/api/controllers/`            | `src/controllers/`                       |
+| Mixed business logic in controllers | `src/services/` (business logic only)    |
+| Direct database/WinCC calls         | `src/repositories/` (data access only)   |
+| Scattered type definitions          | `src/types/` (centralized types)         |
+| No utility organization             | `src/utils/` (pure functions)            |
+| No centralized config               | `src/config/` (configuration management) |
 
 ## Adapting the Template for Your Three Repositories
 
@@ -33,18 +33,19 @@
 
 #### What to Replace:
 
-| **Your Current AM Backend Code** | **Replace With Template Pattern** |
-|----------------------------------|-----------------------------------|
-| ```typescript<br/>@Put(":id")<br/>updateAlarm(@Param("id") id: string, @Body() body: any) {<br/>  if ("acked" in body) {<br/>    if (body.acked == true) {<br/>      const ackedSetByUuid = new AckedSetByUuid();<br/>      ackedSetByUuid.ack(id);<br/>    }<br/>  }<br/>}``` | ```typescript<br/>async acknowledgeAlarm(request: {<br/>  id: string;<br/>  userId: string;<br/>}): Promise<ApiResponse<Alarm>> {<br/>  try {<br/>    const alarm = await this.alarmService.acknowledgeAlarm(<br/>      request.id, request.userId<br/>    );<br/>    return ResponseBuilder.success(alarm);<br/>  } catch (error) {<br/>    return ResponseBuilder.fromError(error as Error);<br/>  }<br/>}``` |
-| `any` type usage | Proper `AlarmUpdateRequest` interface |
-| Direct service instantiation | Dependency injection via constructor |
-| String-based property checking | Runtime validation with Zod |
-| No error handling | Structured error handling |
-| No logging | Structured logging with context |
+| **Your Current AM Backend Code**                                                                                                                                                                                                                                       | **Replace With Template Pattern**                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ``typescript@Put(":id")updateAlarm(@Param("id") id: string, @Body() body: any) {  if ("acked" in body) {    if (body.acked == true) {      const ackedSetByUuid = new AckedSetByUuid();      ackedSetByUuid.ack(id);    }  }}`` | ``typescriptasync acknowledgeAlarm(request: {  id: string;  userId: string;}): Promise<ApiResponse<Alarm>> {  try {    const alarm = await this.alarmService.acknowledgeAlarm(      request.id, request.userId    );    return ResponseBuilder.success(alarm);  } catch (error) {    return ResponseBuilder.fromError(error as Error);  }}`` |
+| `any` type usage                                                                                                                                                                                                                                                           | Proper `AlarmUpdateRequest` interface                                                                                                                                                                                                                                                                                                                                                                       |
+| Direct service instantiation                                                                                                                                                                                                                                                 | Dependency injection via constructor                                                                                                                                                                                                                                                                                                                                                                          |
+| String-based property checking                                                                                                                                                                                                                                               | Runtime validation with Zod                                                                                                                                                                                                                                                                                                                                                                                   |
+| No error handling                                                                                                                                                                                                                                                            | Structured error handling                                                                                                                                                                                                                                                                                                                                                                                     |
+| No logging                                                                                                                                                                                                                                                                   | Structured logging with context                                                                                                                                                                                                                                                                                                                                                                               |
 
 #### Step-by-Step File Changes for AM Backend:
 
 **File 1: Create new types file**
+
 - **Location**: `src/types/alarm.ts` (NEW FILE)
 - **Action**: Create this file and add:
 
@@ -78,6 +79,7 @@ export interface IAlarmService {
 ```
 
 **File 2: Update existing controller**
+
 - **Location**: `src/api/controllers/alarms.controller.ts`
 - **Action**: Replace the entire file content with:
 
@@ -123,6 +125,7 @@ export class AlarmController {
 ```
 
 **File 3: Create new service**
+
 - **Location**: `src/services/alarm.service.ts` (NEW FILE)
 - **Action**: Create this file and add:
 
@@ -179,6 +182,7 @@ export class AlarmService implements IAlarmService {
 ```
 
 **File 4: Create repository**
+
 - **Location**: `src/repositories/alarm.repository.ts` (NEW FILE)
 - **Action**: Create this file and add:
 
@@ -247,10 +251,12 @@ export class AlarmRepository implements IRepository<Alarm> {
 ```
 
 **File 5: Update existing acknowledgement service**
+
 - **Location**: `src/services/Acknowledgement.ts`
 - **Action**: DELETE this file (functionality moved to AlarmService)
 
 **File 6: Update app module**
+
 - **Location**: `src/app.module.ts`
 - **Action**: Replace the imports and providers section:
 
@@ -335,6 +341,7 @@ export interface IWinccoaRepository {
 ```
 
 **File 2: Update existing device controller**
+
 - **Location**: `src/api/apis/device.controller.ts`
 - **Action**: Replace the entire file content with:
 
@@ -383,6 +390,7 @@ export class DevicesController {
 ```
 
 **File 3: Create device command service**
+
 - **Location**: `src/services/device-command.service.ts` (NEW FILE)
 - **Action**: Create this file and add:
 
@@ -450,6 +458,7 @@ export class DeviceCommandService implements IDeviceCommandService {
 ```
 
 **File 4: Create WinCC OA repository**
+
 - **Location**: `src/repositories/winccoa.repository.ts` (NEW FILE)
 - **Action**: Create this file and add:
 
@@ -495,10 +504,12 @@ export class WinccoaRepository implements IWinccoaRepository {
 ```
 
 **File 5: Update existing utils**
+
 - **Location**: `src/utils/winccoaUtils.ts`
 - **Action**: DELETE the findRemoteSystem method (moved to repository)
 
 **File 6: Update app module**
+
 - **Location**: `src/app.module.ts`
 - **Action**: Update imports and providers:
 
@@ -594,6 +605,7 @@ export interface IPmcsDeviceFactory {
 ```
 
 **File 2: Create base service class**
+
 - **Location**: `src/services/pmcs-device-base.service.ts` (NEW FILE)
 - **Action**: Create this file and add:
 
@@ -660,6 +672,7 @@ export abstract class PmcsDeviceBaseService implements IPmcsDeviceLogic {
 ```
 
 **File 3: Replace the large base class**
+
 - **Location**: `classes/VaPmcsDeviceLogic.ts`
 - **Action**: REPLACE the entire 684-line file with:
 
@@ -707,6 +720,7 @@ export class PmcsDeviceFactory implements IPmcsDeviceFactory {
 ```
 
 **File 4: Create specific device services**
+
 - **Location**: `src/services/axial-fan.service.ts` (NEW FILE)
 - **Action**: Create this file and add:
 
@@ -750,6 +764,7 @@ export class FirePanelService extends PmcsDeviceBaseService {
 ```
 
 **File 5: Update index.ts**
+
 - **Location**: `index.ts`
 - **Action**: REPLACE the main function with:
 
@@ -1086,76 +1101,81 @@ describe('AlarmService', () => {
 
 ### **TypeScript Configuration Changes**
 
-| **Your Current tsconfig.json** | **Replace With Template tsconfig.json** |
-|--------------------------------|------------------------------------------|
-| ```json<br/>"noImplicitAny": false``` | ```json<br/>"noImplicitAny": true``` |
-| ```json<br/>"target": "es2016"<br/>"module": "commonjs"``` | ```json<br/>"target": "ES2022"<br/>"module": "ESNext"``` |
-| Missing strict options | ```json<br/>"strict": true,<br/>"noImplicitReturns": true,<br/>"noUncheckedIndexedAccess": true,<br/>"exactOptionalPropertyTypes": true``` |
-| No path mapping | ```json<br/>"baseUrl": "./src",<br/>"paths": {<br/>  "@/*": ["*"],<br/>  "@/types/*": ["types/*"]<br/>}``` |
+| **Your Current tsconfig.json**                     | **Replace With Template tsconfig.json**                                                                                            |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| ``json"noImplicitAny": false``                      | ``json"noImplicitAny": true``                                                                                                       |
+| ``json"target": "es2016""module": "commonjs"`` | ``json"target": "ES2022""module": "ESNext"``                                                                                   |
+| Missing strict options                                   | ``json"strict": true,"noImplicitReturns": true,"noUncheckedIndexedAccess": true,"exactOptionalPropertyTypes": true`` |
+| No path mapping                                          | ``json"baseUrl": "./src","paths": {  "@/*": ["*"],  "@/types/*": ["types/*"]}``                                 |
 
 ### **Package.json Script Replacements**
 
-| **Current Scripts** | **Replace With Template Scripts** |
-|--------------------|------------------------------------|
-| ```json<br/>"start": "node dist/server/server.js"<br/>"dev": "ts-node-dev --respawn --transpile-only src/server/server.ts"``` | ```json<br/>"start": "node dist/main.js"<br/>"dev": "tsx watch src/main.ts"``` |
-| ```json<br/>"build": "tsc"``` | ```json<br/>"build": "tsc && tsc-alias"``` |
-| ```json<br/>"test": "jest dist/test"``` | ```json<br/>"test": "vitest"<br/>"test:coverage": "vitest --coverage"``` |
-| No validation scripts | ```json<br/>"lint": "eslint src --ext .ts --fix"<br/>"validate": "npm run type-check && npm run lint:check"``` |
+| **Current Scripts**                                                                                                   | **Replace With Template Scripts**                                                                      |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| ``json"start": "node dist/server/server.js""dev": "ts-node-dev --respawn --transpile-only src/server/server.ts"`` | ``json"start": "node dist/main.js""dev": "tsx watch src/main.ts"``                                 |
+| ``json"build": "tsc"``                                                                                                 | ``json"build": "tsc && tsc-alias"``                                                                     |
+| ``json"test": "jest dist/test"``                                                                                       | ``json"test": "vitest""test:coverage": "vitest --coverage"``                                       |
+| No validation scripts                                                                                                       | ``json"lint": "eslint src --ext .ts --fix""validate": "npm run type-check && npm run lint:check"`` |
 
 ### **Error Handling Replacements**
 
-| **Current Error Handling** | **Replace With Template Pattern** |
-|----------------------------|-----------------------------------|
-| ```typescript<br/>try {<br/>  values = (await this.woa.dpGet(dpElements)) as [string[], number[]];<br/>} catch (exe) {<br/>  //add debug log<br/>}``` | ```typescript<br/>try {<br/>  const values = await this.winccoaRepository.getValues(dpElements);<br/>  return this.processValues(values);<br/>} catch (error) {<br/>  this.logger.error('Failed to get DP values', error, {<br/>    dpElements,<br/>    deviceName: this.device.dpName<br/>  });<br/>  throw new WinccoaError('DP value retrieval failed', error);<br/>}``` |
-| Generic `catch` blocks | Specific error types with context |
-| `console.log(error)` | Structured error logging |
-| No error propagation | Proper error throwing with typed errors |
+| **Current Error Handling**                                                                                                                    | **Replace With Template Pattern**                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ``typescripttry {  values = (await this.woa.dpGet(dpElements)) as [string[], number[]];} catch (exe) {  //add debug log}`` | ``typescripttry {  const values = await this.winccoaRepository.getValues(dpElements);  return this.processValues(values);} catch (error) {  this.logger.error('Failed to get DP values', error, {    dpElements,    deviceName: this.device.dpName  });  throw new WinccoaError('DP value retrieval failed', error);}`` |
+| Generic `catch` blocks                                                                                                                            | Specific error types with context                                                                                                                                                                                                                                                                                                                                         |
+| `console.log(error)`                                                                                                                              | Structured error logging                                                                                                                                                                                                                                                                                                                                                  |
+| No error propagation                                                                                                                                | Proper error throwing with typed errors                                                                                                                                                                                                                                                                                                                                   |
 
 ### **Import Statement Replacements**
 
-| **Current Imports** | **Replace With Template Imports** |
-|--------------------|-----------------------------------|
-| ```typescript<br/>import { AckedSetByUuid } from '../../services/Acknowledgement'``` | ```typescript<br/>import type { IAlarmService } from '@/types';<br/>import { AlarmService } from '@/services/alarm.service';``` |
-| Relative path imports | Path-mapped imports using `@/` |
-| Mixed default/named imports | Consistent import patterns |
-| No type-only imports | `import type` for type-only imports |
+| **Current Imports**                                                          | **Replace With Template Imports**                                                                                       |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ``typescriptimport { AckedSetByUuid } from '../../services/Acknowledgement'`` | ``typescriptimport type { IAlarmService } from '@/types';import { AlarmService } from '@/services/alarm.service';`` |
+| Relative path imports                                                              | Path-mapped imports using `@/`                                                                                              |
+| Mixed default/named imports                                                        | Consistent import patterns                                                                                                    |
+| No type-only imports                                                               | `import type` for type-only imports                                                                                         |
 
 ### **Dependency Injection Replacements**
 
-| **Current Pattern** | **Replace With Template Pattern** |
-|--------------------|------------------------------------|
-| ```typescript<br/>export class AlarmsController {<br/>  @Put(":id")<br/>  updateAlarm(@Param("id") id: string, @Body() body: any) {<br/>    const ackedSetByUuid = new AckedSetByUuid();<br/>    ackedSetByUuid.ack(id);<br/>  }<br/>}``` | ```typescript<br/>export class AlarmController {<br/>  constructor(<br/>    private readonly alarmService: IAlarmService,<br/>    private readonly logger: ILogger<br/>  ) {}<br/><br/>  async acknowledgeAlarm(request: AlarmRequest): Promise<ApiResponse<Alarm>> {<br/>    return this.alarmService.acknowledgeAlarm(request.id, request.userId);<br/>  }<br/>}``` |
-| Direct instantiation | Constructor injection |
-| No interface dependencies | Interface-based dependencies |
-| No logging | Injected logger |
+| **Current Pattern**                                                                                                                                                                                                               | **Replace With Template Pattern**                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ``typescriptexport class AlarmsController {  @Put(":id")  updateAlarm(@Param("id") id: string, @Body() body: any) {    const ackedSetByUuid = new AckedSetByUuid();    ackedSetByUuid.ack(id);  }}`` | ``typescriptexport class AlarmController {  constructor(    private readonly alarmService: IAlarmService,    private readonly logger: ILogger  ) {}  async acknowledgeAlarm(request: AlarmRequest): Promise<ApiResponse<Alarm>> {    return this.alarmService.acknowledgeAlarm(request.id, request.userId);  }}`` |
+| Direct instantiation                                                                                                                                                                                                                    | Constructor injection                                                                                                                                                                                                                                                                                                                                               |
+| No interface dependencies                                                                                                                                                                                                               | Interface-based dependencies                                                                                                                                                                                                                                                                                                                                        |
+| No logging                                                                                                                                                                                                                              | Injected logger                                                                                                                                                                                                                                                                                                                                                     |
 
 ## Step-by-Step Migration Checklist
 
 ### **Phase 1: Configuration **
+
 - [ ] Replace `tsconfig.json` with template version
 - [ ] Update `package.json` scripts
 - [ ] Add ESLint and Prettier configurations
 - [ ] Install new dependencies: `npm install zod tsx vitest`
 
 ### **Phase 2: Types **
+
 - [ ] Create `src/types/index.ts` with your domain types
 - [ ] Replace all `any` types with proper interfaces
 - [ ] Add validation schemas with Zod
 - [ ] Create custom error classes
 
 ### **Phase 3: Structure **
+
 - [ ] Move controllers to `src/controllers/`
 - [ ] Extract business logic to `src/services/`
 - [ ] Create data access layer in `src/repositories/`
 - [ ] Move utilities to `src/utils/`
 
 ### **Phase 4: Implementation **
+
 - [ ] Implement dependency injection container
 - [ ] Replace console.log with structured logging
 - [ ] Add proper error handling
 - [ ] Write unit tests for business logic
 
 ### **Phase 5: Validation **
+
 - [ ] Run `npm run validate` and fix all issues
 - [ ] Ensure zero `any` types
 - [ ] Add integration tests
