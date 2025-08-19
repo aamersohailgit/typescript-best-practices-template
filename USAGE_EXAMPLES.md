@@ -1,56 +1,499 @@
-# Usage Examples for Your Projects
+# TypeScript Best Practices Template - Usage Examples
 
-## What to Replace with What - Quick Reference
+## Table of Contents
 
-### **Current Code → Template Pattern Mapping**
+1. [Quick Start Guide](#quick-start-guide)
+2. [Unified TypeScript Configuration](#unified-typescript-configuration)
+3. [Repository Analysis Summary](#repository-analysis-summary)
+4. [Repository 1: AM Backend (Alarm Management)](#repository-1-am-backend-alarm-management)
+5. [Repository 2: DM Backend (Device Management)](#repository-2-dm-backend-device-management)
+6. [Repository 3: PMCS Devices](#repository-3-pmcs-devices)
+7. [Repository 4: Command Handler](#repository-4-command-handler)
+8. [Common Migration Patterns](#common-migration-patterns)
+9. [Configuration Updates](#configuration-updates)
+10. [Testing & Validation](#testing--validation)
 
-| **Your Current Code**       | **Replace With**                                 | **Why**                   |
-| --------------------------------- | ------------------------------------------------------ | ------------------------------- |
-| `@Body() body: any`             | `@Body() body: DeviceUpdateRequest`                  | Type safety instead of `any`  |
-| `if ("acked" in body)`          | `const validated = ValidationService.validate(body)` | Runtime validation              |
-| `body.acked == true`            | `validated.acknowledged === true`                    | Strict equality + proper typing |
-| `new AckedSetByUuid()`          | `this.alarmService.acknowledgeAlarm()`               | Dependency injection            |
-| `console.log()`                 | `this.logger.info()`                                 | Structured logging              |
-| Large `VaPmcsDeviceLogic` class | Split into separate services                           | Single Responsibility           |
-| Direct WinCC OA calls             | Service layer abstraction                              | Separation of concerns          |
-| Hardcoded strings                 | Type-safe enums/constants                              | Type safety                     |
-| No error handling                 | Structured error types                                 | Proper error management         |
+---
 
-### **File Structure Migration**
+## Quick Start Guide
 
-| **Current Structure**         | **New Template Structure**           |
-| ----------------------------------- | ------------------------------------------ |
-| `src/api/controllers/`            | `src/controllers/`                       |
-| Mixed business logic in controllers | `src/services/` (business logic only)    |
-| Direct database/WinCC calls         | `src/repositories/` (data access only)   |
-| Scattered type definitions          | `src/types/` (centralized types)         |
-| No utility organization             | `src/utils/` (pure functions)            |
-| No centralized config               | `src/config/` (configuration management) |
+### What This Template Provides
 
-## Adapting the Template for Your Three Repositories
+This template gives you a **production-ready TypeScript project structure** that follows:
+- **SOLID Principles** - Single responsibility, dependency injection, interfaces
+- **DRY Principle** - No code duplication, reusable utilities
+- **KISS Principle** - Simple, readable, maintainable code
+- **TypeScript Best Practices** - Strict typing, no `any`, proper error handling
 
-### 1. **For AM Backend (Alarm Management)**
+### How to Use This Template
 
-#### What to Replace:
+1. **Choose your repository** from the sections below
+2. **Follow the step-by-step file changes** for that specific repository
+3. **Apply the common patterns** to other parts of your codebase
+4. **Use the configuration updates** to improve your TypeScript setup
 
-| **Your Current AM Backend Code**                                                                                                                                                                                                                                       | **Replace With Template Pattern**                                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ``typescript@Put(":id")updateAlarm(@Param("id") id: string, @Body() body: any) {  if ("acked" in body) {    if (body.acked == true) {      const ackedSetByUuid = new AckedSetByUuid();      ackedSetByUuid.ack(id);    }  }}`` | ``typescriptasync acknowledgeAlarm(request: {  id: string;  userId: string;}): Promise<ApiResponse<Alarm>> {  try {    const alarm = await this.alarmService.acknowledgeAlarm(      request.id, request.userId    );    return ResponseBuilder.success(alarm);  } catch (error) {    return ResponseBuilder.fromError(error as Error);  }}`` |
-| `any` type usage                                                                                                                                                                                                                                                           | Proper `AlarmUpdateRequest` interface                                                                                                                                                                                                                                                                                                                                                                       |
-| Direct service instantiation                                                                                                                                                                                                                                                 | Dependency injection via constructor                                                                                                                                                                                                                                                                                                                                                                          |
-| String-based property checking                                                                                                                                                                                                                                               | Runtime validation with Zod                                                                                                                                                                                                                                                                                                                                                                                   |
-| No error handling                                                                                                                                                                                                                                                            | Structured error handling                                                                                                                                                                                                                                                                                                                                                                                     |
-| No logging                                                                                                                                                                                                                                                                   | Structured logging with context                                                                                                                                                                                                                                                                                                                                                                               |
+---
 
-#### Step-by-Step File Changes for AM Backend:
+## Unified TypeScript Configuration
 
-**File 1: Create new types file**
+### **Why Unified Configuration?**
 
-- **Location**: `src/types/alarm.ts` (NEW FILE)
-- **Action**: Create this file and add:
+Having consistent `tsconfig.json` across all repositories ensures:
+- **Code Consistency** - Same TypeScript rules everywhere
+- **Easier Maintenance** - Update rules in one place
+- **Team Productivity** - Developers know what to expect
+- **Quality Assurance** - Consistent code quality standards
+
+### **Configuration Strategy**
+
+This template provides a **single, production-ready TypeScript configuration** that all repositories should use:
+
+```
+typescript-best-practices-template/
+└── tsconfig.json          # Single configuration for all repos
+```
+
+### **Implementation for Your Repositories**
+
+#### **1. Copy the Template Configuration**
+
+Copy `tsconfig.json` to each repository's root directory.
+
+#### **2. Repository-Specific Customizations**
+
+**For NestJS Projects (AM Backend, DM Backend, Command Handler):**
+
+```json
+// In your tsconfig.json, ensure these settings:
+{
+  "compilerOptions": {
+    "module": "CommonJS", // NestJS works better with CommonJS
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+```
+
+**For Standalone TypeScript (PMCS Devices):**
+
+```json
+// In your tsconfig.json, ensure these settings:
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "experimentalDecorators": false,
+    "emitDecoratorMetadata": false
+  }
+}
+```
+
+#### **3. Benefits of This Approach**
+
+- **Consistent Rules**: All repos use the same strict TypeScript settings
+- **Single Source of Truth**: One configuration file to maintain
+- **Easy Updates**: Change rules once, apply everywhere
+- **Modern TypeScript**: Uses latest features and strict checking
+
+### **Key Configuration Features**
+
+| **Feature** | **Benefit** |
+|-------------|-------------|
+| `"strict": true` | Enables all strict type checking |
+| `"noImplicitAny": true` | Prevents implicit any types |
+| `"exactOptionalPropertyTypes": true` | Strict optional property handling |
+| `"noUncheckedIndexedAccess": true` | Safe array/object access |
+| Path mapping with `@/*` | Clean, consistent imports |
+| Decorator support | Full NestJS compatibility |
+
+---
+
+## NestJS Best Practices
+
+### **Architecture Principles**
+
+#### **1. Clean Architecture Layers**
+
+```
+src/
+├── presentation/     # Controllers, DTOs, Guards, Interceptors
+├── application/      # Use Cases, Application Services
+├── domain/          # Business Logic, Entities, Interfaces
+└── infrastructure/  # External Dependencies, Database, APIs
+```
+
+#### **2. SOLID Principles in NestJS**
+
+- **Single Responsibility**: Each class has one reason to change
+- **Open/Closed**: Extend functionality without modifying existing code
+- **Liskov Substitution**: Use interfaces for dependency injection
+- **Interface Segregation**: Keep interfaces focused and small
+- **Dependency Inversion**: Depend on abstractions, not concretions
+
+### **Project Structure**
+
+#### **Recommended Directory Structure**
+
+```
+src/
+├── config/                 # Configuration files
+├── controllers/            # HTTP request handlers
+├── services/              # Business logic
+├── repositories/          # Data access layer
+├── entities/              # Database models
+├── dto/                   # Data Transfer Objects
+├── interfaces/            # TypeScript interfaces
+├── guards/                # Route guards
+├── interceptors/          # Request/response interceptors
+├── pipes/                 # Validation pipes
+├── filters/               # Exception filters
+├── middleware/            # Custom middleware
+├── decorators/            # Custom decorators
+├── utils/                 # Utility functions
+└── main.ts                # Application entry point
+```
+
+### **Dependency Injection Best Practices**
+
+#### **1. Constructor Injection (Recommended)**
 
 ```typescript
-// src/types/alarm.ts
+@Injectable()
+export class UserService {
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly logger: ILogger,
+    private readonly configService: ConfigService,
+  ) {}
+}
+```
+
+#### **2. Use Interfaces for Dependencies**
+
+```typescript
+// interfaces/user-repository.interface.ts
+export interface IUserRepository {
+  create(userData: CreateUserDto): Promise<User>;
+  findById(id: number): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+}
+
+// services/user.service.ts
+@Injectable()
+export class UserService {
+  constructor(
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
+  ) {}
+}
+```
+
+### **Controller Best Practices**
+
+#### **1. Keep Controllers Thin**
+
+```typescript
+@Controller('users')
+export class UserController {
+  constructor(
+    private readonly userService: UserService,
+    private readonly logger: ILogger,
+  ) {}
+
+  @Post()
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async createUser(@Body() createUserDto: CreateUserDto): Promise<ApiResponse<User>> {
+    try {
+      const user = await this.userService.createUser(createUserDto);
+      return ResponseBuilder.success(user);
+    } catch (error) {
+      this.logger.error('Failed to create user', error);
+      return ResponseBuilder.fromError(error);
+    }
+  }
+}
+```
+
+#### **2. Use DTOs for Request/Response**
+
+```typescript
+// dto/create-user.dto.ts
+export class CreateUserDto {
+  @IsString()
+  @IsNotEmpty()
+  @Length(2, 50)
+  readonly firstName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @Length(2, 50)
+  readonly lastName: string;
+
+  @IsEmail()
+  readonly email: string;
+
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+  readonly password: string;
+}
+```
+
+### **Service Best Practices**
+
+#### **1. Single Responsibility**
+
+```typescript
+@Injectable()
+export class UserService {
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly emailService: EmailService,
+    private readonly logger: ILogger,
+  ) {}
+
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
+    // Validate business rules
+    await this.validateUserCreation(createUserDto);
+
+    // Create user
+    const user = await this.userRepository.create(createUserDto);
+
+    // Send welcome email
+    await this.emailService.sendWelcomeEmail(user.email);
+
+    // Log success
+    this.logger.info('User created successfully', { userId: user.id });
+
+    return user;
+  }
+}
+```
+
+### **Repository Pattern**
+
+#### **1. Abstract Data Access**
+
+```typescript
+// repositories/base.repository.ts
+export abstract class BaseRepository<T> {
+  constructor(
+    protected readonly repository: Repository<T>,
+    protected readonly logger: ILogger,
+  ) {}
+
+  async findById(id: number): Promise<T | null> {
+    try {
+      return await this.repository.findOne({ where: { id } as any });
+    } catch (error) {
+      this.logger.error('Failed to find entity by ID', error, { id });
+      throw new DatabaseException('Failed to retrieve entity');
+    }
+  }
+}
+```
+
+### **Error Handling**
+
+#### **1. Custom Exception Classes**
+
+```typescript
+// exceptions/custom.exceptions.ts
+export class ValidationException extends BadRequestException {
+  constructor(message: string, public readonly errors: string[]) {
+    super(message);
+  }
+}
+
+export class DatabaseException extends InternalServerErrorException {
+  constructor(message: string, public readonly originalError?: Error) {
+    super(message);
+  }
+}
+```
+
+#### **2. Global Exception Filter**
+
+```typescript
+// filters/global-exception.filter.ts
+@Catch()
+export class GlobalExceptionFilter implements ExceptionFilter {
+  constructor(private readonly logger: ILogger) {}
+
+  catch(exception: unknown, host: ArgumentsHost): void {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
+
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Internal server error';
+    let errorCode = 'INTERNAL_ERROR';
+
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      message = exception.message;
+      errorCode = this.getErrorCode(exception);
+    }
+
+    // Log error
+    this.logger.error('Exception occurred', exception, {
+      path: request.url,
+      method: request.method,
+      status,
+      errorCode,
+    });
+
+    // Send response
+    response.status(status).json({
+      success: false,
+      error: {
+        code: errorCode,
+        message,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      },
+    });
+  }
+}
+```
+
+### **Testing Strategy**
+
+#### **1. Unit Testing Services**
+
+```typescript
+// user.service.spec.ts
+describe('UserService', () => {
+  let service: UserService;
+  let mockRepository: jest.Mocked<IUserRepository>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: 'IUserRepository',
+          useValue: createMockRepository(),
+        },
+      ],
+    }).compile();
+
+    service = module.get<UserService>(UserService);
+    mockRepository = module.get('IUserRepository');
+  });
+
+  it('should create user successfully', async () => {
+    const createUserDto = {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john.doe@example.com',
+      password: 'SecurePass123!',
+    };
+
+    const expectedUser = { id: 1, ...createUserDto };
+    mockRepository.create.mockResolvedValue(expectedUser);
+
+    const result = await service.createUser(createUserDto);
+
+    expect(result).toEqual(expectedUser);
+    expect(mockRepository.create).toHaveBeenCalledWith(createUserDto);
+  });
+});
+```
+
+### **Performance & Security**
+
+#### **1. Caching Strategy**
+
+```typescript
+@Injectable()
+export class UserService {
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly cacheManager: Cache,
+  ) {}
+
+  @CacheKey('user')
+  @CacheTTL(300) // 5 minutes
+  async getUserById(id: number): Promise<User> {
+    const cacheKey = `user:${id}`;
+
+    // Try to get from cache first
+    let user = await this.cacheManager.get<User>(cacheKey);
+    if (user) {
+      return user;
+    }
+
+    // Get from database
+    user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // Store in cache
+    await this.cacheManager.set(cacheKey, user, 300);
+
+    return user;
+  }
+}
+```
+
+#### **2. Security Headers**
+
+```typescript
+// main.ts
+import helmet from 'helmet';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // Security headers
+  app.use(helmet());
+
+  // CORS configuration
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
+
+  await app.listen(3000);
+}
+```
+
+---
+
+## Repository Analysis Summary
+
+| Repository | Type | Current Status | Main Issues | Priority |
+|------------|------|----------------|-------------|----------|
+| **AM Backend** | NestJS | Basic structure | `any` types, no validation | High |
+| **DM Backend** | NestJS | Good foundation | Mixed concerns, hardcoded values | Medium |
+| **PMCS Devices** | TypeScript | Monolithic classes | 684-line classes, mixed responsibilities | High |
+| **Command Handler** | NestJS | Well-structured | TypeScript config, complex patterns | Medium |
+
+---
+
+## Repository 1: AM Backend (Alarm Management)
+
+### Current Problems
+- Uses `any` types in controllers
+- Direct service instantiation instead of dependency injection
+- No request validation
+- Mixed business logic in controllers
+
+### What You'll Get
+- Type-safe alarm management
+- Proper dependency injection
+- Request validation with Zod
+- Separated concerns (Controller → Service → Repository)
+
+### Step-by-Step Changes
+
+#### 1. Create New Types File
+**File**: `src/types/alarm.ts` (NEW FILE)
+
+```typescript
 export interface Alarm {
   readonly id: string;
   readonly uuid: string;
@@ -78,13 +521,10 @@ export interface IAlarmService {
 }
 ```
 
-**File 2: Update existing controller**
-
-- **Location**: `src/api/controllers/alarms.controller.ts`
-- **Action**: Replace the entire file content with:
+#### 2. Replace Controller
+**File**: `src/api/controllers/alarms.controller.ts` (REPLACE ENTIRE FILE)
 
 ```typescript
-// REPLACE ENTIRE FILE: src/api/controllers/alarms.controller.ts
 import type { IAlarmService, ILogger, ApiResponse, Alarm } from '@/types';
 import { ResponseBuilder } from '@/utils/response';
 import { ValidationService } from '@/utils/validation';
@@ -111,32 +551,14 @@ export class AlarmController {
       return ResponseBuilder.fromError(error as Error);
     }
   }
-
-  async getAlarm(request: { id: string }): Promise<ApiResponse<Alarm>> {
-    try {
-      const alarm = await this.alarmService.getAlarmById(request.id);
-      return ResponseBuilder.success(alarm);
-    } catch (error) {
-      this.logger.error('Failed to get alarm', error as Error, { id: request.id });
-      return ResponseBuilder.fromError(error as Error);
-    }
-  }
 }
 ```
 
-**File 3: Create new service**
-
-- **Location**: `src/services/alarm.service.ts` (NEW FILE)
-- **Action**: Create this file and add:
+#### 3. Create Service
+**File**: `src/services/alarm.service.ts` (NEW FILE)
 
 ```typescript
-// src/services/alarm.service.ts
-import type {
-  IAlarmService,
-  IRepository,
-  Alarm,
-  ILogger
-} from '@/types';
+import type { IAlarmService, IRepository, Alarm, ILogger } from '@/types';
 import { NotFoundError, ValidationError } from '@/types';
 
 export class AlarmService implements IAlarmService {
@@ -165,29 +587,13 @@ export class AlarmService implements IAlarmService {
     this.logger.info('Alarm acknowledged', { id, userId });
     return updatedAlarm!;
   }
-
-  async getActiveAlarms(): Promise<Alarm[]> {
-    const alarms = await this.repository.findAll();
-    return alarms.filter(alarm => alarm.status === 'ACTIVE');
-  }
-
-  async getAlarmById(id: string): Promise<Alarm> {
-    const alarm = await this.repository.findById(id);
-    if (!alarm) {
-      throw new NotFoundError('Alarm', id);
-    }
-    return alarm;
-  }
 }
 ```
 
-**File 4: Create repository**
-
-- **Location**: `src/repositories/alarm.repository.ts` (NEW FILE)
-- **Action**: Create this file and add:
+#### 4. Create Repository
+**File**: `src/repositories/alarm.repository.ts` (NEW FILE)
 
 ```typescript
-// src/repositories/alarm.repository.ts
 import type { IRepository, Alarm, ILogger } from '@/types';
 
 export class AlarmRepository implements IRepository<Alarm> {
@@ -201,17 +607,6 @@ export class AlarmRepository implements IRepository<Alarm> {
     return this.alarms.get(id) || null;
   }
 
-  async findAll(): Promise<Alarm[]> {
-    return Array.from(this.alarms.values());
-  }
-
-  async create(alarmData: Omit<Alarm, 'id'>): Promise<Alarm> {
-    const id = this.generateId();
-    const alarm: Alarm = { ...alarmData, id };
-    this.alarms.set(id, alarm);
-    return alarm;
-  }
-
   async update(id: string, updates: Partial<Alarm>): Promise<Alarm | null> {
     const existing = this.alarms.get(id);
     if (!existing) return null;
@@ -220,109 +615,58 @@ export class AlarmRepository implements IRepository<Alarm> {
     this.alarms.set(id, updated);
     return updated;
   }
-
-  async delete(id: string): Promise<boolean> {
-    return this.alarms.delete(id);
-  }
-
-  private generateId(): string {
-    return `alarm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  private seedSampleData(): void {
-    // Add sample alarms for testing
-    const sampleAlarms: Alarm[] = [
-      {
-        id: 'alarm_001',
-        uuid: 'uuid_001',
-        severity: 'HIGH',
-        status: 'ACTIVE',
-        timestamp: new Date(),
-        description: 'High temperature detected',
-        acknowledged: false,
-      },
-    ];
-
-    sampleAlarms.forEach(alarm => {
-      this.alarms.set(alarm.id, alarm);
-    });
-  }
 }
 ```
 
-**File 5: Update existing acknowledgement service**
-
-- **Location**: `src/services/Acknowledgement.ts`
-- **Action**: DELETE this file (functionality moved to AlarmService)
-
-**File 6: Update app module**
-
-- **Location**: `src/app.module.ts`
-- **Action**: Replace the imports and providers section:
+#### 5. Update App Module
+**File**: `src/app.module.ts` (UPDATE IMPORTS)
 
 ```typescript
-// REPLACE IMPORTS in src/app.module.ts
-import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
-import { AlarmController } from "./controllers/alarm.controller"; // Updated import
-import { UserController } from "./api/controllers/userinfo.controller";
-import { WSGateway } from "./WSGateway";
-import { apiLoggerMiddleware } from '@varia/logger';
-import { AlarmService } from "./services/alarm.service"; // New import
-import { AlarmRepository } from "./repositories/alarm.repository"; // New import
-import { ConsoleLogger } from "./utils/logger"; // New import
+import { AlarmController } from "./controllers/alarm.controller";
+import { AlarmService } from "./services/alarm.service";
+import { AlarmRepository } from "./repositories/alarm.repository";
 
 @Module({
-  imports: [],
-  controllers: [AlarmController, UserController], // Updated controller
+  controllers: [AlarmController, UserController],
   providers: [
-    WSGateway,
-    AlarmService, // New provider
-    AlarmRepository, // New provider
+    AlarmService,
+    AlarmRepository,
     {
       provide: 'ILogger',
       useClass: ConsoleLogger,
-    }, // New provider
+    },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(apiLoggerMiddleware).forRoutes("/api/v1");
-  }
-}
+export class AppModule {}
+```
 
-### 2. **For DM Backend (Device Management)**
+---
 
-#### What to Replace:
+## Repository 2: DM Backend (Device Management)
 
-| **Your Current DM Backend Code** | **Replace With Template Pattern** |
-|----------------------------------|-----------------------------------|
-| ```typescript<br/>@Put(":id")<br/>async updateDevice(<br/>  @Param("id") id: string,<br/>  @Body() updateDeviceRequest: UpdateDeviceRequest<br/>): Promise<Device> {<br/>  const tokens = updateDeviceRequest.control_mode!.split(":");<br/>  const column = tokens[0];<br/>  const value = tokens[1];<br/>  let remoteSystem = WinccoaUtils.findRemoteSystem(id);<br/>  let fullyQualifiedDpName = remoteSystem + ":" + id + "." +<br/>    DeviceRequestHandler.DP_REQUEST_COLUMN_LOOKUP_MAP.get(column);<br/>  const result1 = WSGateway.winccoa.dpSet(fullyQualifiedDpName, value);<br/>}``` | ```typescript<br/>async updateDevice(request: {<br/>  id: string;<br/>  body: DeviceCommandRequest;<br/>}): Promise<ApiResponse<Device>> {<br/>  try {<br/>    await this.deviceCommandService.executeCommand(<br/>      request.id,<br/>      request.body<br/>    );<br/>    const device = await this.deviceService.getDevice(request.id);<br/>    return ResponseBuilder.success(device);<br/>  } catch (error) {<br/>    return ResponseBuilder.fromError(error as Error);<br/>  }<br/>}``` |
-| String parsing in controller | Dedicated service for command parsing |
-| Direct WinCC OA calls | Service layer abstraction |
-| Hard-coded string concatenation | Type-safe DP name building |
-| No error handling | Comprehensive error handling |
-| Mixed responsibilities | Separated concerns (Controller → Service → Repository) |
+### Current Problems
+- String parsing in controllers
+- Direct WinCC OA calls
+- Hard-coded string concatenation
+- Mixed responsibilities
 
-#### Step-by-Step File Changes for DM Backend:
+### What You'll Get
+- Dedicated command parsing service
+- Service layer abstraction
+- Type-safe DP name building
+- Separated concerns
 
-**File 1: Create extended device types**
-- **Location**: `src/types/device.ts` (NEW FILE)
-- **Action**: Create this file and add:
+### Step-by-Step Changes
+
+#### 1. Create Device Types
+**File**: `src/types/device.ts` (NEW FILE)
 
 ```typescript
-// src/types/device.ts
 export interface WinccoaDevice extends Device {
   readonly dpName: string;
   readonly remoteSystem: string;
   readonly className: string;
   readonly commandMappings: Map<string, string>;
-}
-
-export interface DeviceCommand {
-  readonly deviceId: string;
-  readonly command: string;
-  readonly value: unknown;
-  readonly timestamp: Date;
 }
 
 export interface DeviceCommandRequest {
@@ -332,23 +676,12 @@ export interface DeviceCommandRequest {
 export interface IDeviceCommandService {
   executeCommand(deviceId: string, commandRequest: DeviceCommandRequest): Promise<void>;
 }
-
-export interface IWinccoaRepository {
-  executeCommand(dpeName: string, value: string): Promise<void>;
-  findRemoteSystem(deviceId: string): Promise<string>;
-  buildDpeName(device: WinccoaDevice, command: string): string;
-}
 ```
 
-**File 2: Update existing device controller**
-
-- **Location**: `src/api/apis/device.controller.ts`
-- **Action**: Replace the entire file content with:
+#### 2. Replace Device Controller
+**File**: `src/api/apis/device.controller.ts` (REPLACE ENTIRE FILE)
 
 ```typescript
-// REPLACE ENTIRE FILE: src/api/apis/device.controller.ts
-import { Body, Controller, Get, Param, Put } from "@nestjs/common";
-import { ApiOperation } from "@nestjs/swagger";
 import type { IDeviceCommandService, IDeviceService, ILogger, ApiResponse, Device, DeviceCommandRequest } from '@/types';
 import { ResponseBuilder } from '@/utils/response';
 
@@ -360,19 +693,7 @@ export class DevicesController {
     private readonly logger: ILogger
   ) {}
 
-  @Get(":id")
-  async getDevice(@Param("id") id: string): Promise<ApiResponse<Device>> {
-    try {
-      const device = await this.deviceService.getDevice(id);
-      return ResponseBuilder.success(device);
-    } catch (error) {
-      this.logger.error('Failed to get device', error as Error, { id });
-      return ResponseBuilder.fromError(error as Error);
-    }
-  }
-
   @Put(":id")
-  @ApiOperation({ summary: "Update Device by ID" })
   async updateDevice(
     @Param("id") id: string,
     @Body() updateDeviceRequest: DeviceCommandRequest
@@ -389,23 +710,10 @@ export class DevicesController {
 }
 ```
 
-**File 3: Create device command service**
-
-- **Location**: `src/services/device-command.service.ts` (NEW FILE)
-- **Action**: Create this file and add:
+#### 3. Create Command Service
+**File**: `src/services/device-command.service.ts` (NEW FILE)
 
 ```typescript
-// src/services/device-command.service.ts
-import type {
-  IDeviceCommandService,
-  IRepository,
-  WinccoaDevice,
-  DeviceCommandRequest,
-  ILogger
-} from '@/types';
-import { NotFoundError, ValidationError } from '@/types';
-import { ValidationService } from '@/utils/validation';
-
 export class DeviceCommandService implements IDeviceCommandService {
   constructor(
     private readonly deviceRepository: IRepository<WinccoaDevice>,
@@ -425,12 +733,6 @@ export class DeviceCommandService implements IDeviceCommandService {
     const fullyQualifiedDpName = this.buildDpeName(device, command);
 
     await this.executeWinccoaCommand(fullyQualifiedDpName, value);
-
-    this.logger.info('Device command executed', {
-      deviceId,
-      command,
-      value
-    });
   }
 
   private parseControlMode(controlMode: string): [string, string] {
@@ -440,132 +742,31 @@ export class DeviceCommandService implements IDeviceCommandService {
     }
     return [command, value];
   }
-
-  private buildDpeName(device: WinccoaDevice, command: string): string {
-    const columnMapping = device.commandMappings.get(command);
-    if (!columnMapping) {
-      throw new ValidationError(`Unknown command: ${command}`);
-    }
-    return `${device.remoteSystem}:${device.dpName}.${columnMapping}`;
-  }
-
-  private async executeWinccoaCommand(dpeName: string, value: string): Promise<void> {
-    // Integrate with your WinCC OA system here
-    // This is where you'd use WSGateway.winccoa.dpSet(dpeName, value)
-    this.logger.info('Executing WinCC OA command', { dpeName, value });
-  }
 }
 ```
 
-**File 4: Create WinCC OA repository**
+---
 
-- **Location**: `src/repositories/winccoa.repository.ts` (NEW FILE)
-- **Action**: Create this file and add:
+## Repository 3: PMCS Devices
 
-```typescript
-// src/repositories/winccoa.repository.ts
-import type { IWinccoaRepository, WinccoaDevice, ILogger } from '@/types';
-import { WSGateway } from '../WSGateway'; // Your existing gateway
+### Current Problems
+- 684-line monolithic class
+- Mixed concerns in one class
+- Direct WinCC OA manager usage
+- Hard-coded device type switches
 
-export class WinccoaRepository implements IWinccoaRepository {
-  constructor(private readonly logger: ILogger) {}
+### What You'll Get
+- Split into focused, single-purpose services
+- Clear separation: Base + Specific implementations
+- Factory pattern for device creation
+- Centralized callback lifecycle management
 
-  async executeCommand(dpeName: string, value: string): Promise<void> {
-    try {
-      await WSGateway.winccoa.dpSet(dpeName, value);
-      this.logger.info('WinCC OA command executed', { dpeName, value });
-    } catch (error) {
-      this.logger.error('Failed to execute WinCC OA command', error as Error, { dpeName, value });
-      throw error;
-    }
-  }
+### Step-by-Step Changes
 
-  async findRemoteSystem(deviceId: string): Promise<string> {
-    // Replace WinccoaUtils.findRemoteSystem with proper logic
-    // This should be moved from utils to repository
-    const remoteSystem = await this.lookupRemoteSystem(deviceId);
-    return remoteSystem;
-  }
-
-  buildDpeName(device: WinccoaDevice, command: string): string {
-    const columnMapping = device.commandMappings.get(command);
-    if (!columnMapping) {
-      throw new Error(`Unknown command: ${command}`);
-    }
-    return `${device.remoteSystem}:${device.dpName}.${columnMapping}`;
-  }
-
-  private async lookupRemoteSystem(deviceId: string): Promise<string> {
-    // Implement your remote system lookup logic here
-    // This replaces the static WinccoaUtils.findRemoteSystem method
-    return 'woa_omcs'; // Default or implement proper lookup
-  }
-}
-```
-
-**File 5: Update existing utils**
-
-- **Location**: `src/utils/winccoaUtils.ts`
-- **Action**: DELETE the findRemoteSystem method (moved to repository)
-
-**File 6: Update app module**
-
-- **Location**: `src/app.module.ts`
-- **Action**: Update imports and providers:
+#### 1. Create PMCS Types
+**File**: `src/types/pmcs-device.ts` (NEW FILE)
 
 ```typescript
-// UPDATE IMPORTS in src/app.module.ts
-import { DeviceCommandService } from "./services/device-command.service"; // New import
-import { WinccoaRepository } from "./repositories/winccoa.repository"; // New import
-
-@Module({
-  imports: [EventEmitterModule.forRoot(), ValueTemplateModule],
-  controllers: [DevicesController, UserController],
-  providers: [
-    WSGateway,
-    DeviceCommandService, // New provider
-    WinccoaRepository, // New provider
-    {
-      provide: 'ILogger',
-      useClass: ConsoleLogger,
-    }, // New provider
-  ],
-}
-
-### 3. **For PMCS Devices**
-
-#### What to Replace:
-
-| **Your Current PMCS Code** | **Replace With Template Pattern** |
-|----------------------------|-----------------------------------|
-| ```typescript<br/>export class VaPmcsDeviceLogic {<br/>  // 684 lines of mixed responsibilities:<br/>  // - Bit manipulation<br/>  // - Callback management<br/>  // - Status handling<br/>  // - Error management<br/>  // - WinCC OA integration<br/>  public async run(): Promise<void> {<br/>    await this.getBitMapping();<br/>    this.createStatusCallback(...);<br/>    this.createCmdCallback();<br/>    this.createDpeCallback(...);<br/>    // ... 600+ more lines<br/>  }<br/>}``` | ```typescript<br/>// Split into focused services:<br/>export abstract class PmcsDeviceBaseService {<br/>  async run(): Promise<void> {<br/>    await this.initializeBitMappings();<br/>    await this.setupStatusCallbacks();<br/>    await this.setupCommandCallbacks();<br/>    await this.setupCustomCallbacks(); // Abstract<br/>  }<br/>}<br/><br/>export class AxialFanService extends PmcsDeviceBaseService {<br/>  protected async setupCustomCallbacks(): Promise<void> {<br/>    // Only axial fan specific logic<br/>  }<br/>}``` |
-| 684-line monolithic class | Split into focused, single-purpose services |
-| Direct WinCC OA manager usage | Abstracted through repository pattern |
-| Mixed concerns in one class | Clear separation: Base + Specific implementations |
-| Hard-coded device type switches | Factory pattern for device creation |
-| `console.log` everywhere | Structured logging with context |
-| No error typing | Custom error classes with proper inheritance |
-| Manual callback management | Centralized callback lifecycle management |
-
-#### Specific Replacements:
-
-| **Current Pattern** | **New Pattern** | **Benefit** |
-|--------------------|-----------------|-------------|
-| ```typescript<br/>constructor(dpName: string, className: string, winccOA: WinccoaManager) {<br/>  this.dpName = dpName;<br/>  this.className = className;<br/>  this.woa = winccOA;<br/>}``` | ```typescript<br/>constructor(<br/>  protected readonly device: PmcsDevice,<br/>  protected readonly winccoa: WinccoaManager,<br/>  protected readonly logger: ILogger<br/>) {}``` | Dependency injection + structured data |
-| `console.log("createCmdCallback > " + \`Command dpe does not exist: ${cmd_dpe}\`)` | `this.logger.error('Command DPE not found', { cmdDpe: cmd_dpe, deviceName: this.device.dpName })` | Structured logging with context |
-| ```typescript<br/>public createCmdCallback(): void {<br/>  // 50+ lines of mixed logic<br/>}``` | ```typescript<br/>private readonly callbackService = new CallbackService();<br/>protected setupCommandCallback(): void {<br/>  this.callbackService.createCallback({...});<br/>}``` | Single responsibility |
-| ```typescript<br/>if (this.woa.dpExists(status_dpe)) {<br/>  // callback logic<br/>}``` | ```typescript<br/>await this.winccoaRepository.createCallback({<br/>  dpePath: status_dpe,<br/>  callback: this.handleStatusUpdate.bind(this)<br/>});``` | Repository pattern for data access |
-
-#### Step-by-Step File Changes for PMCS Devices:
-
-**File 1: Create new PMCS types**
-- **Location**: `src/types/pmcs-device.ts` (NEW FILE)
-- **Action**: Create this file and add:
-
-```typescript
-// src/types/pmcs-device.ts
-import type { WinccoaConnectUpdateType, WinccoaError, WinccoaManager } from 'winccoa-manager';
-
 export interface IPmcsDeviceLogic {
   run(): Promise<void>;
   stop(): Promise<void>;
@@ -577,49 +778,15 @@ export interface PmcsDevice {
   readonly bitMappings: BitMappings;
 }
 
-export interface BitMappings {
-  readonly cmd: Map<number, string>;
-  readonly status: Map<number, string>;
-  readonly warning: Map<number, string>;
-  readonly fault: Map<number, string>;
-  readonly interlock: Map<number, string>;
-  readonly permissive: Map<number, string>;
-}
-
-export interface DeviceCallback {
-  readonly dpePath: string;
-  readonly callback: CallbackFunction;
-  readonly userData?: unknown;
-}
-
-export type CallbackFunction = (
-  names: string[],
-  values: unknown[],
-  type: WinccoaConnectUpdateType,
-  error?: WinccoaError
-) => void;
-
 export interface IPmcsDeviceFactory {
   createDevice(dpName: string, className: string): IPmcsDeviceLogic;
 }
 ```
 
-**File 2: Create base service class**
-
-- **Location**: `src/services/pmcs-device-base.service.ts` (NEW FILE)
-- **Action**: Create this file and add:
+#### 2. Create Base Service
+**File**: `src/services/pmcs-device-base.service.ts` (NEW FILE)
 
 ```typescript
-// src/services/pmcs-device-base.service.ts
-import type {
-  IPmcsDeviceLogic,
-  PmcsDevice,
-  DeviceCallback,
-  CallbackFunction,
-  ILogger
-} from '@/types';
-import type { WinccoaManager } from 'winccoa-manager';
-
 export abstract class PmcsDeviceBaseService implements IPmcsDeviceLogic {
   protected readonly callbacks: DeviceCallback[] = [];
 
@@ -636,54 +803,14 @@ export abstract class PmcsDeviceBaseService implements IPmcsDeviceLogic {
     await this.setupCustomCallbacks(); // Abstract method
   }
 
-  async stop(): Promise<void> {
-    this.callbacks.forEach(callback => {
-      // Disconnect WinCC OA callbacks
-    });
-    this.callbacks.length = 0;
-  }
-
   protected abstract setupCustomCallbacks(): Promise<void>;
-
-  protected async initializeBitMappings(): Promise<void> {
-    // Common bit mapping initialization logic
-  }
-
-  protected setupStatusCallback(dpePath: string, bitMapping: Map<number, string>): void {
-    const callback: CallbackFunction = (names, values, type, error) => {
-      if (error) {
-        this.logger.error('Status callback error', error);
-        return;
-      }
-      this.handleStatusUpdate(bitMapping, names, values);
-    };
-
-    this.callbacks.push({ dpePath, callback });
-  }
-
-  private handleStatusUpdate(
-    bitMapping: Map<number, string>,
-    names: string[],
-    values: unknown[]
-  ): void {
-    // Common status handling logic
-  }
 }
 ```
 
-**File 3: Replace the large base class**
-
-- **Location**: `classes/VaPmcsDeviceLogic.ts`
-- **Action**: REPLACE the entire 684-line file with:
+#### 3. Replace Large Base Class
+**File**: `classes/VaPmcsDeviceLogic.ts` (REPLACE ENTIRE FILE)
 
 ```typescript
-// REPLACE ENTIRE FILE: classes/VaPmcsDeviceLogic.ts
-import type { IPmcsDeviceFactory, IPmcsDeviceLogic, PmcsDevice, ILogger } from '@/types';
-import type { WinccoaManager } from 'winccoa-manager';
-import { AxialFanService } from '../services/axial-fan.service';
-import { FirePanelService } from '../services/fire-panel.service';
-import { ValidationError } from '@/types';
-
 export class PmcsDeviceFactory implements IPmcsDeviceFactory {
   constructor(
     private readonly winccoa: WinccoaManager,
@@ -691,18 +818,7 @@ export class PmcsDeviceFactory implements IPmcsDeviceFactory {
   ) {}
 
   createDevice(dpName: string, className: string): IPmcsDeviceLogic {
-    const device: PmcsDevice = {
-      dpName,
-      className,
-      bitMappings: {
-        cmd: new Map(),
-        status: new Map(),
-        warning: new Map(),
-        fault: new Map(),
-        interlock: new Map(),
-        permissive: new Map(),
-      }
-    };
+    const device: PmcsDevice = { dpName, className, bitMappings: { /* ... */ } };
 
     switch (className) {
       case 'VaAxialFanSFN':
@@ -719,466 +835,271 @@ export class PmcsDeviceFactory implements IPmcsDeviceFactory {
 }
 ```
 
-**File 4: Create specific device services**
-
-- **Location**: `src/services/axial-fan.service.ts` (NEW FILE)
-- **Action**: Create this file and add:
+#### 4. Create Specific Services
+**File**: `src/services/axial-fan.service.ts` (NEW FILE)
 
 ```typescript
-// src/services/axial-fan.service.ts
-import { PmcsDeviceBaseService } from './pmcs-device-base.service';
-
 export class AxialFanService extends PmcsDeviceBaseService {
   protected async setupCustomCallbacks(): Promise<void> {
     this.setupStatusCallback(
       `${this.device.dpName}.states.currentFanSpeed`,
       new Map([[0, 'fanSpeed'], [1, 'fanStatus']])
     );
-
-    this.logger.info('Axial fan specific callbacks setup', {
-      dpName: this.device.dpName
-    });
   }
 }
 ```
 
-- **Location**: `src/services/fire-panel.service.ts` (NEW FILE)
-- **Action**: Create this file and add:
+---
 
-```typescript
-// src/services/fire-panel.service.ts
-import { PmcsDeviceBaseService } from './pmcs-device-base.service';
+## Repository 4: Command Handler
 
-export class FirePanelService extends PmcsDeviceBaseService {
-  protected async setupCustomCallbacks(): Promise<void> {
-    this.setupStatusCallback(
-      `${this.device.dpName}.states.currentHliCommSts`,
-      new Map([[0, 'hliComm'], [1, 'hliStatus']])
-    );
+### Current Problems
+- TypeScript configuration issues (`noImplicitAny: false`)
+- Large services with mixed responsibilities
+- Tight coupling in chain handlers
+- Complex error aggregation logic
 
-    this.logger.info('Fire panel specific callbacks setup', {
-      dpName: this.device.dpName
-    });
+### What You'll Get
+- Strict TypeScript configuration
+- Clean architecture with proper interfaces
+- Simplified chain pattern
+- Proper error handling and validation
+
+### Step-by-Step Changes
+
+#### 1. Fix TypeScript Configuration
+**File**: `tsconfig.json` (REPLACE ENTIRE FILE)
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"],
+      "@/domain/*": ["domain/*"],
+      "@/application/*": ["application/*"],
+      "@/infrastructure/*": ["infrastructure/*"],
+      "@/presentation/*": ["presentation/*"]
+    }
   }
 }
 ```
 
-**File 5: Update index.ts**
+#### 2. Implement Clean Architecture
+**Structure**: Create new directory structure
 
-- **Location**: `index.ts`
-- **Action**: REPLACE the main function with:
-
-```typescript
-// REPLACE MAIN FUNCTION in index.ts
-import { WinccoaManager } from "winccoa-manager";
-import { PmcsDeviceFactory } from "./classes/VaPmcsDeviceLogic";
-import { ConsoleLogger } from "./utils/logger";
-import type { IPmcsDeviceLogic } from '@/types';
-
-const winccoa = new WinccoaManager();
-const logger = new ConsoleLogger('info');
-const deviceFactory = new PmcsDeviceFactory(winccoa, logger);
-
-class DeviceManager {
-  private readonly devices: IPmcsDeviceLogic[] = [];
-
-  async initializeAllDevices(): Promise<void> {
-    const deviceConfigs = [
-      { filter: "*", className: "VaAxialFanSFN" },
-      { filter: "*", className: "VaAxialFanXFN" },
-      { filter: "*", className: "VaMainFirePanel" },
-    ];
-
-    for (const config of deviceConfigs) {
-      await this.initializeDeviceType(config.filter, config.className);
-    }
-  }
-
-  private async initializeDeviceType(filter: string, className: string): Promise<void> {
-    try {
-      const dpNames = winccoa.dpNames(filter, className);
-
-      for (const dpName of dpNames) {
-        const deviceName = this.extractDeviceName(dpName);
-        const device = deviceFactory.createDevice(deviceName, className);
-
-        await device.run();
-        this.devices.push(device);
-      }
-    } catch (error) {
-      logger.error(`Failed to initialize ${className} devices`, error as Error);
-    }
-  }
-
-  private extractDeviceName(dpName: string): string {
-    return dpName.split(':')[1] || dpName;
-  }
-
-  async shutdown(): Promise<void> {
-    for (const device of this.devices) {
-      await device.stop();
-    }
-    this.devices.length = 0;
-  }
-}
-
-async function main(): Promise<void> {
-  const manager = new DeviceManager();
-
-  try {
-    await manager.initializeAllDevices();
-    logger.info('All PMCS devices initialized successfully');
-  } catch (error) {
-    logger.error('Failed to initialize PMCS devices', error as Error);
-    process.exit(1);
-  }
-
-  process.on('SIGINT', async () => {
-    logger.info('Shutting down PMCS devices...');
-    await manager.shutdown();
-    process.exit(0);
-  });
-}
-
-void main();
+```
+src/
+├── domain/           # Business logic interfaces
+├── application/      # Use cases and application services
+├── infrastructure/   # External dependencies (WinCC OA)
+└── presentation/     # Controllers and DTOs
 ```
 
-#### Refactor the base class following SRP:
+#### 3. Create Interfaces
+**File**: `src/domain/interfaces/winccoa.interface.ts` (NEW FILE)
 
 ```typescript
-// src/services/pmcs-device-base.service.ts
-export abstract class PmcsDeviceBaseService implements IPmcsDeviceLogic {
-  protected readonly callbacks: DeviceCallback[] = [];
+export interface IWinccoaManager {
+  connect(): Promise<void>
+  disconnect(): Promise<void>
+  sendCommand(command: Command): Promise<CommandResult>
+}
 
+export interface ICommandHandler {
+  canHandle(command: Command): boolean
+  handle(command: Command): Promise<CommandResult>
+}
+```
+
+#### 4. Simplify Chain Pattern
+**File**: `src/application/services/command.orchestrator.service.ts` (NEW FILE)
+
+```typescript
+@Injectable()
+export class CommandOrchestratorService {
   constructor(
-    protected readonly device: PmcsDevice,
-    protected readonly winccoa: WinccoaManager,
-    protected readonly logger: ILogger
+    private readonly handlers: ICommandHandler[],
+    private readonly winccoaManager: IWinccoaManager
   ) {}
 
-  // Template method (Open/Closed Principle)
-  async run(): Promise<void> {
-    await this.initializeBitMappings();
-    await this.setupStatusCallbacks();
-    await this.setupCommandCallbacks();
-    await this.setupCustomCallbacks(); // Abstract method
-  }
-
-  async stop(): Promise<void> {
-    // Cleanup all callbacks
-    this.callbacks.forEach(callback => {
-      // Disconnect WinCC OA callbacks
-    });
-    this.callbacks.length = 0;
-  }
-
-  // Abstract method - each device implements its specific logic
-  protected abstract setupCustomCallbacks(): Promise<void>;
-
-  protected async initializeBitMappings(): Promise<void> {
-    // Common bit mapping initialization logic
-  }
-
-  protected setupStatusCallback(dpePath: string, bitMapping: Map<number, string>): void {
-    const callback: CallbackFunction = (names, values, type, error) => {
-      if (error) {
-        this.logger.error('Status callback error', error);
-        return;
-      }
-      this.handleStatusUpdate(bitMapping, names, values);
-    };
-
-    this.callbacks.push({ dpePath, callback });
-    // Register with WinCC OA
-  }
-
-  private handleStatusUpdate(
-    bitMapping: Map<number, string>,
-    names: string[],
-    values: unknown[]
-  ): void {
-    // Common status handling logic
-  }
-}
-```
-
-#### Create specific device implementations:
-
-```typescript
-// src/services/axial-fan.service.ts
-export class AxialFanService extends PmcsDeviceBaseService {
-  protected async setupCustomCallbacks(): Promise<void> {
-    // Axial fan specific callbacks
-    this.setupStatusCallback(
-      `${this.device.dpName}.states.currentFanSpeed`,
-      new Map()
-    );
-  }
-}
-
-// src/services/fire-panel.service.ts
-export class FirePanelService extends PmcsDeviceBaseService {
-  protected async setupCustomCallbacks(): Promise<void> {
-    // Fire panel specific callbacks
-    this.setupStatusCallback(
-      `${this.device.dpName}.states.currentHliCommSts`,
-      new Map()
-    );
-  }
-}
-```
-
-#### Device Factory (following Factory Pattern):
-
-```typescript
-// src/services/device.factory.ts
-export class PmcsDeviceFactory {
-  static createDevice(
-    deviceConfig: PmcsDevice,
-    winccoa: WinccoaManager,
-    logger: ILogger
-  ): IPmcsDeviceLogic {
-    switch (deviceConfig.className) {
-      case 'VaAxialFanSFN':
-      case 'VaAxialFanXFN':
-        return new AxialFanService(deviceConfig, winccoa, logger);
-
-      case 'VaMainFirePanel':
-        return new FirePanelService(deviceConfig, winccoa, logger);
-
-      case 'VaDelugeValve':
-        return new DelugeValveService(deviceConfig, winccoa, logger);
-
-      default:
-        throw new ValidationError(`Unsupported device class: ${deviceConfig.className}`);
+  async executeCommand(command: Command): Promise<CommandResult> {
+    const handler = this.handlers.find(h => h.canHandle(command))
+    if (!handler) {
+      throw new CommandNotSupportedError(command.type)
     }
+
+    return await handler.handle(command)
   }
 }
 ```
 
-## Integration Patterns
+---
 
-### Express.js Integration (for HTTP APIs):
+## Common Migration Patterns
 
-```typescript
-// src/infrastructure/express.server.ts
-import express from 'express';
+### Code Pattern Replacements
 
-export class ExpressServer {
-  private app = express();
+| **Current Pattern** | **New Pattern** | **Benefit** |
+|--------------------|-----------------|-------------|
+| `@Body() body: any` | `@Body() body: DeviceUpdateRequest` | Type safety instead of `any` |
+| `if ("acked" in body)` | `const validated = ValidationService.validate(body)` | Runtime validation |
+| `new AckedSetByUuid()` | `this.alarmService.acknowledgeAlarm()` | Dependency injection |
+| `console.log()` | `this.logger.info()` | Structured logging |
+| Large monolithic classes | Split into separate services | Single Responsibility |
+| Direct WinCC OA calls | Service layer abstraction | Separation of concerns |
 
-  constructor(
-    private readonly alarmController: AlarmController,
-    private readonly deviceController: DeviceController,
-    private readonly logger: ILogger
-  ) {
-    this.setupMiddleware();
-    this.setupRoutes();
-  }
+### File Structure Migration
 
-  private setupRoutes(): void {
-    this.app.put('/api/v1/alarms/:id', async (req, res) => {
-      const result = await this.alarmController.acknowledgeAlarm({
-        id: req.params.id,
-        userId: req.headers['x-user-id'] as string,
-      });
+| **Current Structure** | **New Template Structure** |
+|----------------------|----------------------------|
+| `src/api/controllers/` | `src/controllers/` |
+| Mixed business logic in controllers | `src/services/` (business logic only) |
+| Direct database/WinCC calls | `src/repositories/` (data access only) |
+| Scattered type definitions | `src/types/` (centralized types) |
+| No utility organization | `src/utils/` (pure functions) |
 
-      res.status(result.success ? 200 : 500).json(result);
-    });
+---
 
-    this.app.get('/api/v1/devices/:id', async (req, res) => {
-      const result = await this.deviceController.getDevice({
-        id: req.params.id,
-      });
+## Configuration Updates
 
-      res.status(result.success ? 200 : 404).json(result);
-    });
-  }
-}
-```
+### TypeScript Configuration Changes
 
-### WebSocket Integration (for real-time updates):
+| **Current Setting** | **New Setting** | **Why** |
+|---------------------|-----------------|---------|
+| `"noImplicitAny": false` | `"noImplicitAny": true` | Prevents implicit any types |
+| `"target": "es2016"` | `"target": "ES2022"` | Modern JavaScript features |
+| Missing strict options | `"strict": true` | Enables all strict checks |
+| No path mapping | `"baseUrl": "./src"` | Clean import paths |
 
-```typescript
-// src/infrastructure/websocket.gateway.ts
-export class WebSocketGateway {
-  constructor(
-    private readonly alarmService: IAlarmService,
-    private readonly logger: ILogger
-  ) {}
+### Package.json Script Updates
 
-  setupAlarmSubscriptions(socket: WebSocket): void {
-    // Subscribe to alarm updates and send to client
-    this.alarmService.onAlarmUpdate((alarm) => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-          type: 'ALARM_UPDATE',
-          data: alarm,
-        }));
-      }
-    });
+| **Current Script** | **New Script** | **Purpose** |
+|-------------------|-----------------|-------------|
+| `"build": "tsc"` | `"build": "tsc && tsc-alias"` | Build with path mapping |
+| `"test": "jest dist/test"` | `"test": "vitest"` | Modern testing framework |
+| No validation scripts | `"validate": "npm run type-check && npm run lint:check"` | Code quality checks |
+
+### ESLint Rule Updates
+
+```javascript
+// Add these rules to your ESLint config
+{
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/explicit-function-return-type': 'error',
+    'complexity': ['error', 10],
+    'max-lines-per-function': ['error', 50],
+    'max-params': ['error', 4]
   }
 }
 ```
 
-## Testing Examples
+---
+
+## Testing & Validation
+
+### Unit Testing Examples
 
 ```typescript
-// src/tests/alarm.service.test.ts
 describe('AlarmService', () => {
   let alarmService: AlarmService;
   let mockRepository: jest.Mocked<IRepository<Alarm>>;
-  let mockLogger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
     mockRepository = createMockRepository<Alarm>();
-    mockLogger = createMockLogger();
     alarmService = new AlarmService(mockRepository, mockLogger);
   });
 
-  describe('acknowledgeAlarm', () => {
-    it('should acknowledge an active alarm', async () => {
-      // Arrange
-      const alarmId = 'alarm-123';
-      const userId = 'user-456';
-      const alarm: Alarm = {
-        id: alarmId,
-        uuid: 'uuid-123',
-        severity: 'HIGH',
-        status: 'ACTIVE',
-        acknowledged: false,
-        timestamp: new Date(),
-        description: 'Test alarm',
-      };
+  it('should acknowledge an active alarm', async () => {
+    const alarm = { id: 'alarm-123', acknowledged: false };
+    mockRepository.findById.mockResolvedValue(alarm);
 
-      mockRepository.findById.mockResolvedValue(alarm);
-      mockRepository.update.mockResolvedValue({
-        ...alarm,
-        acknowledged: true,
-        acknowledgedBy: userId,
-        acknowledgedAt: expect.any(Date),
-        status: 'ACKNOWLEDGED',
-      });
+    const result = await alarmService.acknowledgeAlarm('alarm-123', 'user-456');
 
-      // Act
-      const result = await alarmService.acknowledgeAlarm(alarmId, userId);
-
-      // Assert
-      expect(result.acknowledged).toBe(true);
-      expect(result.acknowledgedBy).toBe(userId);
-      expect(mockRepository.update).toHaveBeenCalledWith(alarmId, {
-        acknowledged: true,
-        acknowledgedBy: userId,
-        acknowledgedAt: expect.any(Date),
-        status: 'ACKNOWLEDGED',
-      });
-    });
-
-    it('should throw ValidationError when alarm already acknowledged', async () => {
-      // Arrange
-      const alarm: Alarm = {
-        id: 'alarm-123',
-        uuid: 'uuid-123',
-        severity: 'HIGH',
-        status: 'ACKNOWLEDGED',
-        acknowledged: true,
-        timestamp: new Date(),
-        description: 'Test alarm',
-      };
-
-      mockRepository.findById.mockResolvedValue(alarm);
-
-      // Act & Assert
-      await expect(alarmService.acknowledgeAlarm('alarm-123', 'user-456'))
-        .rejects
-        .toThrow(ValidationError);
-    });
+    expect(result.acknowledged).toBe(true);
+    expect(mockRepository.update).toHaveBeenCalled();
   });
 });
 ```
 
-## Configuration & Setup Replacements
+### Integration Testing
 
-### **TypeScript Configuration Changes**
+```typescript
+describe('AlarmController Integration', () => {
+  let app: INestApplication;
+  let alarmService: AlarmService;
 
-| **Your Current tsconfig.json**                     | **Replace With Template tsconfig.json**                                                                                            |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| ``json"noImplicitAny": false``                      | ``json"noImplicitAny": true``                                                                                                       |
-| ``json"target": "es2016""module": "commonjs"`` | ``json"target": "ES2022""module": "ESNext"``                                                                                   |
-| Missing strict options                                   | ``json"strict": true,"noImplicitReturns": true,"noUncheckedIndexedAccess": true,"exactOptionalPropertyTypes": true`` |
-| No path mapping                                          | ``json"baseUrl": "./src","paths": {  "@/*": ["*"],  "@/types/*": ["types/*"]}``                                 |
+  beforeEach(async () => {
+    const moduleFixture = await Test.createTestingModule({
+      controllers: [AlarmController],
+      providers: [AlarmService, AlarmRepository],
+    }).compile();
 
-### **Package.json Script Replacements**
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
 
-| **Current Scripts**                                                                                                   | **Replace With Template Scripts**                                                                      |
-| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| ``json"start": "node dist/server/server.js""dev": "ts-node-dev --respawn --transpile-only src/server/server.ts"`` | ``json"start": "node dist/main.js""dev": "tsx watch src/main.ts"``                                 |
-| ``json"build": "tsc"``                                                                                                 | ``json"build": "tsc && tsc-alias"``                                                                     |
-| ``json"test": "jest dist/test"``                                                                                       | ``json"test": "vitest""test:coverage": "vitest --coverage"``                                       |
-| No validation scripts                                                                                                       | ``json"lint": "eslint src --ext .ts --fix""validate": "npm run type-check && npm run lint:check"`` |
+  it('/api/v1/alarms/:id (PUT)', async () => {
+    const response = await request(app.getHttpServer())
+      .put('/api/v1/alarms/alarm-123')
+      .send({ acknowledged: true })
+      .expect(200);
 
-### **Error Handling Replacements**
+    expect(response.body.success).toBe(true);
+  });
+});
+```
 
-| **Current Error Handling**                                                                                                                    | **Replace With Template Pattern**                                                                                                                                                                                                                                                                                                                                   |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ``typescripttry {  values = (await this.woa.dpGet(dpElements)) as [string[], number[]];} catch (exe) {  //add debug log}`` | ``typescripttry {  const values = await this.winccoaRepository.getValues(dpElements);  return this.processValues(values);} catch (error) {  this.logger.error('Failed to get DP values', error, {    dpElements,    deviceName: this.device.dpName  });  throw new WinccoaError('DP value retrieval failed', error);}`` |
-| Generic `catch` blocks                                                                                                                            | Specific error types with context                                                                                                                                                                                                                                                                                                                                         |
-| `console.log(error)`                                                                                                                              | Structured error logging                                                                                                                                                                                                                                                                                                                                                  |
-| No error propagation                                                                                                                                | Proper error throwing with typed errors                                                                                                                                                                                                                                                                                                                                   |
+---
 
-### **Import Statement Replacements**
+## Migration Checklist
 
-| **Current Imports**                                                          | **Replace With Template Imports**                                                                                       |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| ``typescriptimport { AckedSetByUuid } from '../../services/Acknowledgement'`` | ``typescriptimport type { IAlarmService } from '@/types';import { AlarmService } from '@/services/alarm.service';`` |
-| Relative path imports                                                              | Path-mapped imports using `@/`                                                                                              |
-| Mixed default/named imports                                                        | Consistent import patterns                                                                                                    |
-| No type-only imports                                                               | `import type` for type-only imports                                                                                         |
-
-### **Dependency Injection Replacements**
-
-| **Current Pattern**                                                                                                                                                                                                               | **Replace With Template Pattern**                                                                                                                                                                                                                                                                                                                             |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ``typescriptexport class AlarmsController {  @Put(":id")  updateAlarm(@Param("id") id: string, @Body() body: any) {    const ackedSetByUuid = new AckedSetByUuid();    ackedSetByUuid.ack(id);  }}`` | ``typescriptexport class AlarmController {  constructor(    private readonly alarmService: IAlarmService,    private readonly logger: ILogger  ) {}  async acknowledgeAlarm(request: AlarmRequest): Promise<ApiResponse<Alarm>> {    return this.alarmService.acknowledgeAlarm(request.id, request.userId);  }}`` |
-| Direct instantiation                                                                                                                                                                                                                    | Constructor injection                                                                                                                                                                                                                                                                                                                                               |
-| No interface dependencies                                                                                                                                                                                                               | Interface-based dependencies                                                                                                                                                                                                                                                                                                                                        |
-| No logging                                                                                                                                                                                                                              | Injected logger                                                                                                                                                                                                                                                                                                                                                     |
-
-## Step-by-Step Migration Checklist
-
-### **Phase 1: Configuration **
-
+### Phase 1: Configuration
 - [ ] Replace `tsconfig.json` with template version
 - [ ] Update `package.json` scripts
 - [ ] Add ESLint and Prettier configurations
 - [ ] Install new dependencies: `npm install zod tsx vitest`
 
-### **Phase 2: Types **
-
+### Phase 2: Types
 - [ ] Create `src/types/index.ts` with your domain types
 - [ ] Replace all `any` types with proper interfaces
 - [ ] Add validation schemas with Zod
 - [ ] Create custom error classes
 
-### **Phase 3: Structure **
-
+### Phase 3: Structure
 - [ ] Move controllers to `src/controllers/`
 - [ ] Extract business logic to `src/services/`
 - [ ] Create data access layer in `src/repositories/`
 - [ ] Move utilities to `src/utils/`
 
-### **Phase 4: Implementation **
-
+### Phase 4: Implementation
 - [ ] Implement dependency injection container
 - [ ] Replace console.log with structured logging
 - [ ] Add proper error handling
 - [ ] Write unit tests for business logic
 
-### **Phase 5: Validation **
-
+### Phase 5: Validation
 - [ ] Run `npm run validate` and fix all issues
 - [ ] Ensure zero `any` types
 - [ ] Add integration tests
 - [ ] Document the new architecture
 
-This template provides a solid foundation that you can adapt for all three of your repositories while maintaining TypeScript best practices and SOLID principles!
+---
+
+## Need Help?
+
+This template provides a solid foundation for all your repositories. Each section above contains:
+- **Specific file changes** with exact code snippets
+- **Step-by-step instructions** for implementation
+- **Before/after examples** showing the transformation
+- **Common patterns** you can apply elsewhere
+
+Start with the repository that matches your current project, then apply the common patterns to other parts of your codebase!
